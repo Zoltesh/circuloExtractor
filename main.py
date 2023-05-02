@@ -115,18 +115,17 @@ class App(customtkinter.CTk):
                        'output_folder_path': self.output_folder_textfield}
         # If the textfields are not empty or invalid, set the run_result to the valid path
         for key, value in text_fields.items():
-            if value.get():
-                self.run_result[key] = value.get().split('\n')[0]
-            if self.run_result[key]:
-                if Path(self.run_result[key]).is_dir():
-                    print("Folder is valid!")
-                    self.run_result[key] = value
+            text = value.get().split('\n')[0]  # Get the text field value
+            if text:
+                if Path(text).is_dir():
+                    print(f"{key} folder is valid!")
+                    self.run_result[key] = text  # Set the valid path to run_result
                 else:
-                    print("Folder is invalid!")
-                    self.run_result[key] = ""
+                    print(f"{key} folder is invalid!")
+                    self.run_result[key] = ""  # Clear the run_result value for this field
             else:
-                print("Folder cannot be empty!")
-                self.run_result[key] = ""
+                print(f"{key} folder cannot be empty!")
+                self.run_result[key] = ""  # Clear the run_result value for this field
 
     def exit_button_function(self):
         self.destroy()
