@@ -4,12 +4,15 @@
 import tkinter.filedialog
 import customtkinter
 from pathlib import Path
+from Input_PDF import Input_PDF
 
 
 class App(customtkinter.CTk):
     def __init__(self):
         # The result after running the run_button_function
         self.run_result = {'input_folder_path': "", 'output_folder_path': ""}
+        # Initialize the Input_PDF object
+        self.Input_PDF = Input_PDF("")
         self.BUTTON_SETTINGS = {'width': 100, 'font_and_size': ("Calibri", 18), 'anchor': 'center'}
         super().__init__()
 
@@ -94,9 +97,6 @@ class App(customtkinter.CTk):
         input_folder.join(input_folder)
         files = []
         # Get all files inside the chosen directory and append to list of files
-        # Use this code in a processing function
-        """for file in os.listdir(input_folder):
-            files.append(f'{input_folder}\{file}')"""
         self.input_folder_textfield.delete(0, "end")
         self.input_folder_textfield.insert(0, input_folder)
 
@@ -129,14 +129,6 @@ class App(customtkinter.CTk):
 
     def exit_button_function(self):
         self.destroy()
-
-    # Scales the widget with the dimensions of the window
-    def widget_scale(self, widget: customtkinter.CTkButton):
-        window_width = self.winfo_width()
-        window_height = self.winfo_height()
-
-        new_widget_width = window_width + widget.winfo_width()
-        widget._font = 40
 
 
 if __name__ == '__main__':
