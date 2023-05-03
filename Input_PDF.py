@@ -1,4 +1,5 @@
 import pdfrw
+import pdfplumber
 import os
 from pathlib import Path
 

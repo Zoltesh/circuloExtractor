@@ -4,15 +4,13 @@
 import tkinter.filedialog
 import customtkinter
 from pathlib import Path
-from Input_PDF import Input_PDF
+import Processor
 
 
 class App(customtkinter.CTk):
     def __init__(self):
         # The result after running the run_button_function
         self.run_result = {'input_folder_path': "", 'output_folder_path': ""}
-        # Initialize the Input_PDF object
-        self.Input_PDF = Input_PDF("")
         self.BUTTON_SETTINGS = {'width': 100, 'font_and_size': ("Calibri", 18), 'anchor': 'center'}
         super().__init__()
 
@@ -126,6 +124,16 @@ class App(customtkinter.CTk):
             else:
                 print(f"{key} folder cannot be empty!")
                 self.run_result[key] = ""  # Clear the run_result value for this field
+
+        # Check if both input and output folder paths are valid
+        if all(path for path in self.run_result.values()):
+            input_folder = self.run_result['input_folder_path']
+            output_folder = self.run_result['output_folder_path']
+
+            # Call the process_all_pdfs function with the input and output folders
+            Processor.process_all_pdfs(input_folder, output_folder)
+        else:
+            print("Please provide valid input and output folder paths.")
 
     def exit_button_function(self):
         self.destroy()
