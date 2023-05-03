@@ -59,20 +59,31 @@ def create_data_structure(pdf_data):
 
 
 def process_all_pdfs(in_folder: str, out_folder: str):
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor() as executor:
         futures = []
-        for file in os.listdir(in_folder):
+
+        print("Processing PDFs in folder:", in_folder)
+        files_in_folder = os.listdir(in_folder)
+        print("Files in folder:", files_in_folder)
+        counter = 0
+
+        for file in files_in_folder:
             if file.endswith(".pdf"):
+                counter += 1
+                print(f"Processing file {counter}: {file}")
                 input_path = Path(in_folder) / file
                 output_path = Path(out_folder) / file
-
+                print(input_path)
+                print(output_path)
                 # Submit the task to extract and process the PDF into a DataFrame
                 future = executor.submit(extract_and_process_pdf, str(input_path))
                 future.output_path = str(output_path)
                 futures.append(future)
 
-        # Process the resulting DataFrames
-        for future in futures:
-            df = future.result()
-            process_dataframe(df, future.output_path)
+        for future in futures.as_completed(futures):
+            try:
+                pdf_data = future.result()
+                print(pdf_data, future.output_path)
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
