@@ -1,7 +1,26 @@
 # Payment_History_Processor.py
 
-import pdfplumber
+# Payment_History_Processor.py
+
+import re
 import pandas as pd
+
+
+def extract_payment_history(text):
+    # Define a regex pattern to find the table in the text
+    table_pattern = re.compile(r"Descripción, Montos.*?Periodos\] Últimos 24", re.DOTALL)
+    table_match = table_pattern.search(text)
+
+    if table_match:
+        # Extract the table data as a list of rows
+        table_data = table_match.group().split("\n")
+
+        # Convert the table data into a DataFrame
+        payment_history_df = pd.DataFrame([row.split(",") for row in table_data])
+
+        return payment_history_df
+    else:
+        return None
 
 
 def process_payment_history(table):
@@ -30,3 +49,4 @@ def process_payment_history(table):
 
     df = pd.DataFrame(unique_indices, columns=["#"])
     return df
+

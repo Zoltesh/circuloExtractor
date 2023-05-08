@@ -2,11 +2,14 @@ import re
 import os
 from datetime import datetime
 import pandas as pd
+import fitz
 import pdfplumber
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from dateutil.parser import parse
+
+from Payment_History_Processor import extract_payment_history, process_payment_history
 
 
 def convert_spanish_date(date_str):
@@ -29,6 +32,12 @@ def convert_spanish_date(date_str):
         date_str = date_str.replace(spanish_month, english_month)
 
     return parse(date_str).strftime("%d-%b-%Y")
+
+
+def extract_payment_history_data(table):
+    # Call the process_payment_history function from Payment_History_Processor.py
+    payment_history_df = process_payment_history(table)
+    return payment_history_df
 
 
 def extract_data_with_pattern(text, pattern, process_data):
@@ -110,9 +119,9 @@ def process_curp(match):
 def extract_and_process_pdf(input_path: str):
     # Extract text from the input PDF
     text = ''
-    with pdfplumber.open(input_path) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text()
+    with fitz.open(input_path) as pdf:
+        for page in pdf:
+            text += page.get_text()
 
         # Extract the RFC
         rfc_match = re.search(r"RFC:\s*([A-Za-z0-9]+)", text)
@@ -180,12 +189,19 @@ def extract_and_process_pdf(input_path: str):
         if curp_df is not None:
             dfs.append(curp_df)
 
+        # Extract payment history data
+        payment_history_df = extract_payment_history(pdf)
+
+        # Add payment_history_df to dfs if not empty
+        if payment_history_df is not None and not payment_history_df.empty:
+            dfs.append(payment_history_df)
+
         if dfs:
             result_df = pd.concat(dfs, axis=0, ignore_index=True)
-            return rfc, result_df
+            return rfc, result_df, payment_history_df
         else:
             print("No data found in the PDF")
-            return rfc, None
+            return rfc, None, payment_history_df
 
 
 # Create prepare data from a single dataframe to create data visualizations and fill out the output pdf
@@ -193,21 +209,19 @@ def process_dataframe(input_path: str, output_path: str):
     # Process each PDF in the input folder
     for file in os.listdir(input_path):
         if file.endswith(".pdf"):
-            input_path = os.path.join(input_path, file)
+            file_path = os.path.join(input_path, file)
 
             # Extract text from the input PDF
             text = ''
-            with pdfplumber.open(input_path) as pdf:
+            with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
                     text += page.extract_text()
             print(text)
 
             # Process the extracted text, create data structures, etc.
-            # ...
 
             # Save the output PDF to the output folder
-            output_path = os.path.join(output_path, file)
-            # ...
+            output_file_path = os.path.join(output_path, file)
 
 
 def create_output_pdf(data: pd.DataFrame, output_path: str):
