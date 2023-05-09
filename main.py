@@ -4,7 +4,7 @@
 import tkinter.filedialog
 import customtkinter
 from pathlib import Path
-import Processor
+from Reader import extract_pdf_data
 
 
 class App(customtkinter.CTk):
@@ -134,9 +134,22 @@ class App(customtkinter.CTk):
                 if input_folder == output_folder:
                     print("Input and output folders cannot be the same. Please choose different folders.")
                 else:
-                    # Call the process_all_pdfs function with the input and output folders
-                    print(f"Calling process_all_pdfs with: {input_folder}, {output_folder}")
-                    Processor.process_all_pdfs(input_folder, output_folder)
+                    # Process all PDF files in the input folder
+                    pdf_files = [file for file in Path(input_folder).iterdir() if
+                                 file.suffix.lower() == '.pdf' and not file.name.startswith('~')]
+
+                    extracted_data_list = [extract_pdf_data(str(pdf_file)) for pdf_file in pdf_files]
+
+                    # Filter out any None values (i.e., broken documents)
+                    extracted_data_list = [data for data in extracted_data_list if data is not None]
+
+                    # Process the extracted data using the functions in Processor.py
+                    # processed_data = process_extracted_data(extracted_data_list)
+
+                    # Write the processed data to the output folder using the functions in Writer.py
+                    # write_processed_data(processed_data, output_folder)
+
+                    print("Data processing completed.")
             else:
                 print("Please provide valid input and output folder paths.")
 
