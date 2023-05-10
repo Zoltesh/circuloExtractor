@@ -68,9 +68,14 @@ def extract_pdf_data(file_path):
             frequencia_values = ["Semanal", "Catorcenal", "Quincenal", "Mensual", "Bimestral", "Trimestral",
                                  "Cuatrimestral", "Semestral", "Anual"]
 
+            for page_num in range(1, pdf.page_count):
+                page = pdf.load_page(page_num)
+                text = page.get_text()
+                lines = text.splitlines()
             # TODO Obtain Producto Responsabilidad for each record, adapting to differing line counts
-            """Could find by getting first transaction on a page where the line above is Estatus\nCAN..."""
+                producto_responsabilidad_pattern = re.compile("^[A-Z\s/]+$")
             # TODO Obtain Otorgante for each record, adapting to differing line counts
+            otorgante_pattern = re.compile("")
             # TODO Obtain Limite for each record and convert to number
             # TODO Obtain Aprobado for each record and convert to number
             # TODO Obtain Actual for each record and convert to number
