@@ -82,7 +82,20 @@ def calculate_total_credits_not_old(consult_date, df_cleaned_records):
     for index, record in df_cleaned_records.iterrows():
         if (consult_date - record['Apertura']) > threshold:
             continue
-        else:
+        elif record['Responsabilidad']:
+            total += 1
+
+    return total
+
+
+def calculate_total_credits_active_not_old(consult_date, df_cleaned_records):
+    total = 0
+    threshold = pd.Timedelta(days=365.25 / 12 * 2 * 12)
+
+    for index, record in df_cleaned_records.iterrows():
+        if (consult_date - record['Apertura']) > threshold:
+            continue
+        elif record['Actual'] > decimal.Decimal('0'):
             total += 1
 
     return total
@@ -98,6 +111,33 @@ def calculate_total_credits_late(df_cleaned_records):
             total += 1
             rows.append(record['ID'])
     return total, rows
+
+
+def calculate_total_credits_late_not_old(consult_date, df_cleaned_records):
+    total = 0
+    threshold = pd.Timedelta(days=365.25 / 12 * 2 * 12)
+
+    for index, record in df_cleaned_records.iterrows():
+        actual_result = 1 if record['Actual'] > decimal.Decimal('0') else 0
+        historial_result = 0 if record['Historial'][0] in ('V', '', '-') else 1
+        if (consult_date - record['Apertura']) > threshold:
+            continue
+        elif historial_result * actual_result == 1:
+            total += 1
+    return total
+
+
+def calculate_current_balance_not_old(consult_date, df_cleaned_records):
+    total = decimal.Decimal('0')
+    threshold = pd.Timedelta(days=365.25 / 12 * 2 * 12)
+
+    for index, record in df_cleaned_records.iterrows():
+        if (consult_date - record['Apertura']) > threshold:
+            continue
+        else:
+            total += record['Actual']
+
+    return total
 
 
 def calculate_monthly_amount(M, O, J):
@@ -119,6 +159,38 @@ def calculate_total_monthly_amount(df_cleaned_records):
     return total_amount
 
 
+def calculate_total_monthly_amount_not_old(consult_date, df_cleaned_records):
+    total = decimal.Decimal('0')
+    threshold = pd.Timedelta(days=365.25 / 12 * 2 * 12)
+
+    for index, record in df_cleaned_records.iterrows():
+        if (consult_date - record['Apertura']) > threshold:
+            continue
+        else:
+            M = record['Actual']
+            O = record['A pagar']
+            J = TIME_INTERVALS[record['Frequency']]
+            monthly_amount = calculate_monthly_amount(M, O, J)
+            total += monthly_amount
+    return total
+
+
+"""
+TODO Why does spreadsheet refer all records in iterrows to the first record's frequency instead of the current iteration
+"""
+def calculate_oldest_period(df_cleaned_records):
+    oldest = ''
+    period = TIME_INTERVALS[df_cleaned_records[0]['Frequency']]
+    for index, record in df_cleaned_records.iterrows():
+
+        if (type(record['Reporte']) == str) or (type(record['Cierre']) == str):
+            continue
+        else:
+            oldest = min(record['Reporte'], record['Cierre']) - datetime.timedelta(days=(index * period))
+
+    return oldest
+
+
 def calculate_data(cleaned_records):
     # General Data
     general = extracted_data.general_information
@@ -128,20 +200,33 @@ def calculate_data(cleaned_records):
     calculated_dict = {}
     df_cleaned_records = pd.DataFrame(cleaned_records)
     total_credits = len(df_cleaned_records)
-    total_credits_not_old = calculate_total_credits_not_old(new_fecha, df_cleaned_records)
+    total_credits_not_old = calculate_total_credits_not_old(consult_date=new_fecha,
+                                                            df_cleaned_records=df_cleaned_records)
     total_credits_active = len(df_cleaned_records[df_cleaned_records['Actual'] > 0])
-    total_credits_late, late_rows = calculate_total_credits_late(df_cleaned_records)
+    total_credits_active_not_old = calculate_total_credits_active_not_old(consult_date=new_fecha,
+                                                                          df_cleaned_records=df_cleaned_records)
+    total_credits_late, late_rows = calculate_total_credits_late(df_cleaned_records=df_cleaned_records)
+    total_credits_late_not_old = calculate_total_credits_late_not_old(consult_date=new_fecha,
+                                                                      df_cleaned_records=df_cleaned_records)
     current_balance = df_cleaned_records['Actual'].sum()
+    current_balance_not_old = calculate_current_balance_not_old(consult_date=new_fecha,
+                                                                df_cleaned_records=df_cleaned_records)
     current_monthly_payment = calculate_total_monthly_amount(df_cleaned_records=df_cleaned_records)
+    current_monthly_payment_not_old = calculate_total_monthly_amount_not_old(consult_date=new_fecha,
+                                                                             df_cleaned_records=df_cleaned_records)
+    oldest_period = calculate_oldest_period(df_cleaned_records=df_cleaned_records)
 
     calculated_dict['Creditos Totales'] = total_credits
     calculated_dict['Creditos Totales - Not Old'] = total_credits_not_old
     calculated_dict['Creditos Activos'] = total_credits_active
+    calculated_dict['Creditos Activos - Not Old'] = total_credits_active_not_old
     calculated_dict['Creditos Atrasados'] = total_credits_late
     calculated_dict['Filas Atrasadas'] = late_rows
+    calculated_dict['Creditos Atrasados - Not Old'] = total_credits_late_not_old
     calculated_dict['Saldo Actual'] = current_balance
+    calculated_dict['Saldo Actual - Not Old'] = current_balance_not_old
     calculated_dict['Pago Mensual Actual'] = current_monthly_payment
-    print(total_credits_not_old)
+    print(oldest_period)
 
 
 # Extract the data
