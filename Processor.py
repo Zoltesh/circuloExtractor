@@ -2,7 +2,8 @@ import decimal
 import datetime
 import Reader
 import pandas as pd
-from Constants import SPANISH_TO_ENGLISH_MONTHS, SPANISH_TO_ENGLISH_MONTHS_FULL, TIME_INTERVALS
+from Constants import SPANISH_TO_ENGLISH_MONTHS, SPANISH_TO_ENGLISH_MONTHS_FULL, TIME_INTERVALS, GRUPO_SOLIDARIO, \
+    WEEKLY_LOAN_ADJUSTMENT, HIPOTECA, ALL_OTHER
 
 
 def handle_historial(code_string, target_length):
@@ -44,7 +45,7 @@ def clean_data(records):
         record['Otorgante'] = record['Otorgante'].replace('\n', ' ')
 
         # Convert currency columns to Decimal
-        for col in ['Limite', 'Aprobado', 'Actual', 'Vencido', 'A pagar']:
+        for col in ['Limite', 'Aprobado', 'Actual', 'Vencido', 'A pagar', 'Plazo']:
             try:
                 # Remove currency symbol and commas, and convert to Decimal
                 record[col] = decimal.Decimal(record[col].replace('$', '').replace(',', ''))
@@ -178,17 +179,97 @@ def calculate_total_monthly_amount_not_old(consult_date, df_cleaned_records):
 """
 TODO Why does spreadsheet refer all records in iterrows to the first record's frequency instead of the current iteration
 """
+
+
 def calculate_oldest_period(df_cleaned_records):
     oldest = ''
-    period = TIME_INTERVALS[df_cleaned_records[0]['Frequency']]
+    """
+    TODO fix the period not returning the expected value
+    """
+    period = None
     for index, record in df_cleaned_records.iterrows():
-
+        period = TIME_INTERVALS[record['Frequency']]
         if (type(record['Reporte']) == str) or (type(record['Cierre']) == str):
+            continue
+        elif not period:
             continue
         else:
             oldest = min(record['Reporte'], record['Cierre']) - datetime.timedelta(days=(index * period))
 
     return oldest
+
+
+def calculate_monthly_payment(record):
+    if record['Responsabilidad'] == 'GRUPO SOLIDARIO':
+        monthly = record['Aprobado'] * GRUPO_SOLIDARIO
+    elif record['Frequency'] == 'Semanal':
+        monthly = record['Aprobado'] * WEEKLY_LOAN_ADJUSTMENT
+    else:
+        monthly = record['Aprobado']
+    return monthly
+
+
+def calculate_largest_balance(df_cleaned_records):
+    largest = decimal.Decimal('0')
+    balance = decimal.Decimal('0')
+    largest_row = None
+    for index, record in df_cleaned_records.iterrows():
+        if record['Responsabilidad'] == 'GRUPO SOLIDARIO':
+            balance = record['Aprobado'] * GRUPO_SOLIDARIO
+        elif record['Frequency'] == 'Semanal':
+            balance = record['Aprobado'] * WEEKLY_LOAN_ADJUSTMENT
+        else:
+            balance = record['Aprobado']
+        if balance > largest:  # Check if the current balance is larger than the previous largest
+            largest = balance
+            largest_row = record['ID']  # Store the ID associated with the largest balance
+
+    return largest, largest_row
+
+
+def calculate_pmt(rate, term_number, principal):
+    # rate * principle
+    pmt = (rate * principal) / \
+          (decimal.Decimal('1')
+           # Subtract (1 + rate)^(-term_number)
+           - (
+                   (
+                           decimal.Decimal('1') + rate
+                   ) ** (
+                       decimal.Decimal(-abs(term_number))
+                   )
+           )
+           )
+
+    return pmt
+
+
+def calculate_largest_monthly_payment(df_cleaned_records):
+    largest = decimal.Decimal('0')
+    largest_row = None
+    for index, record in df_cleaned_records.iterrows():
+        monthly_payment = calculate_monthly_payment(record=record)
+        prev_largest = largest
+        try:
+            days = decimal.Decimal(TIME_INTERVALS[record['Frequency']])
+            time_calc = decimal.Decimal('360') / days
+            if record['Credito'] == 'HIPOTECA':
+                rate = HIPOTECA / time_calc
+            else:
+                rate = ALL_OTHER / time_calc
+            pmt = calculate_pmt(rate=rate,
+                                term_number=record['Plazo'],
+                                principal=monthly_payment)
+
+            pmt *= (decimal.Decimal('30') / days)
+            if pmt > largest:
+                largest = pmt
+                largest_row = record['ID']
+
+        except Exception:
+            largest = decimal.Decimal('0')
+    largest = largest.quantize(decimal.Decimal('1'))
+    return largest, largest_row
 
 
 def calculate_data(cleaned_records):
@@ -215,6 +296,8 @@ def calculate_data(cleaned_records):
     current_monthly_payment_not_old = calculate_total_monthly_amount_not_old(consult_date=new_fecha,
                                                                              df_cleaned_records=df_cleaned_records)
     oldest_period = calculate_oldest_period(df_cleaned_records=df_cleaned_records)
+    largest_balance, largest_balance_row = calculate_largest_balance(df_cleaned_records=df_cleaned_records)
+    largest_monthly_payment, largest_monthly_row = calculate_largest_monthly_payment(df_cleaned_records=df_cleaned_records)
 
     calculated_dict['Creditos Totales'] = total_credits
     calculated_dict['Creditos Totales - Not Old'] = total_credits_not_old
@@ -226,7 +309,14 @@ def calculate_data(cleaned_records):
     calculated_dict['Saldo Actual'] = current_balance
     calculated_dict['Saldo Actual - Not Old'] = current_balance_not_old
     calculated_dict['Pago Mensual Actual'] = current_monthly_payment
-    print(oldest_period)
+    calculated_dict['Pago Mensual Actual - Not Old'] = current_monthly_payment_not_old
+    calculated_dict['Saldo mas grande'] = largest_balance
+    calculated_dict['Saldo mas grande - Row'] = largest_balance_row
+    calculated_dict['Pagos mens mayor'] = largest_monthly_payment
+    calculated_dict['Pagos mens mayor - Row'] = largest_monthly_row
+    for key, value in calculated_dict.items():
+        if key in ['Pagos mens mayor - Row', 'Pagos mens mayor', 'Saldo mas grande - Row', 'Saldo mas grande']:
+            print(value)
 
 
 # Extract the data

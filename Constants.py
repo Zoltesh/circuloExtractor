@@ -1,4 +1,6 @@
 # A dictionary mapping Spanish month abbreviations to English ones
+import decimal
+
 SPANISH_TO_ENGLISH_MONTHS = {
     'ENE': 'JAN', 'FEB': 'FEB', 'MAR': 'MAR', 'ABR': 'APR',
     'MAY': 'MAY', 'JUN': 'JUN', 'JUL': 'JUL', 'AGO': 'AUG',
@@ -56,3 +58,21 @@ POSITIONS = {
     'Historial': (3, 6)
 }
 
+ELEVATE_SCORING_ALGORITHM = {
+    # First value in list is FICO Weight, second is Elevate Weight
+    'Payment History': [decimal.Decimal('0.35'), decimal.Decimal('0.46')],
+    'Amounts Owed': [decimal.Decimal('0.30'), decimal.Decimal('0.24')],
+    'Length of Credit': [decimal.Decimal('0.15'), decimal.Decimal('0.10')],
+    'New Credit': [decimal.Decimal('0.10'), decimal.Decimal('0.05')],
+    'Types of Credit (Credit Mix)': [decimal.Decimal('0.10'), decimal.Decimal('0.05')],
+    'Inquiries': [decimal.Decimal('0.00'), decimal.Decimal('0.04')],
+    'Largest Loan / Largest Payment': [decimal.Decimal('0.00'), decimal.Decimal('0.06')],
+    'Cobranza / Quebranto Penalties': [decimal.Decimal('0.00'), decimal.Decimal('0.00')]
+}
+
+GRUPO_SOLIDARIO = decimal.Decimal('0.33')
+WEEKLY_LOAN_ADJUSTMENT = decimal.Decimal('0.50')
+ON_TIME_VS_DELINQUENT = decimal.Decimal('0.31')
+DEPTH_PAYMENT_HISTORY = decimal.Decimal('0.15')
+HIPOTECA = decimal.Decimal('0.15')
+ALL_OTHER = decimal.Decimal('1')
