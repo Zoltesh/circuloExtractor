@@ -338,11 +338,14 @@ def calculate_inquiries_12_months(df_cleaned_records, fecha_buro):
 """
 
 
-def calculate_data(cleaned_records, cleaned_inquries):
-    # General Data
-    general = extracted_data.general_information
+def calculate_data(general, cleaned_records, cleaned_inquries):
     new_fecha = clean_fecha_consulta(general['Fecha de consulta'])
-    name = general['Nombre (s)'] + ' ' + general['Apellido Paterno'] + ' ' + general['Apellido Materno']
+    first_name = general['Nombre (s)']
+    paterno = general['Apellido Paterno']
+    materno = general['Apellido Materno']
+    rfc = general['RFC']
+    name = first_name + ' ' + paterno + ' ' + materno
+    output_filename = f'{first_name}_{paterno}_{materno}_{rfc}.pdf'
 
     calculated_dict = {}
     df_cleaned_records = pd.DataFrame(cleaned_records)
@@ -371,7 +374,7 @@ def calculate_data(cleaned_records, cleaned_inquries):
                                                         df_cleaned_inquiries=df_cleaned_inquiries)
     inquiries_24_months = calculate_inquiries_24_months(consult_date=new_fecha,
                                                         df_cleaned_inquiries=df_cleaned_inquiries)
-
+    calculated_dict['Output Filename'] = output_filename
     calculated_dict['Nombre'] = name
     calculated_dict['Creditos Totales'] = total_credits
     calculated_dict['Creditos Totales - Not Old'] = total_credits_not_old
@@ -391,18 +394,6 @@ def calculate_data(cleaned_records, cleaned_inquries):
     calculated_dict['Consultas Ult 12 Meses'] = inquiries_12_months
     calculated_dict['Consultas Ult 24 Meses'] = inquiries_24_months
 
+    return calculated_dict
 
-# Extract the data
-extracted_data = Reader.extract_data()
 
-# Clean the data
-clean_records = clean_data(extracted_data.transactions)
-
-# Clean inquiries
-cleaned_inquiries = clean_inquiries(extracted_data.inquiries)
-"""# Process the cleaned records
-for clean in clean_records:
-    # Perform further processing or calculations on the clean records
-    # Example: print the cleaned record
-    print(clean)"""
-calculate_data(clean_records, cleaned_inquiries)
