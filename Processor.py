@@ -76,6 +76,46 @@ def clean_data(records):
     return records
 
 
+def clean_inquiries(inquiries):
+    """
+    Cleans the inquiries data.
+
+    Args:
+        inquiries (list): The list of inquiries to clean.
+
+    Returns:
+        list: The cleaned inquiries.
+
+    """
+    cleaned_inquiries = []
+
+    for inquiry in inquiries:
+        cleaned_inquiry = {}
+
+        # Clean 'Fecha de Consulta'
+        fecha_consulta = inquiry['Fecha de Consulta']
+        for es_month, en_month in SPANISH_TO_ENGLISH_MONTHS.items():
+            fecha_consulta = fecha_consulta.replace(es_month, en_month)
+        cleaned_inquiry['Fecha de Consulta'] = datetime.datetime.strptime(fecha_consulta, '%d/%b/%y')
+
+        # Clean 'Otorgante', 'Tipo de Crédito', and 'Moneda'
+        cleaned_inquiry['Otorgante'] = inquiry['Otorgante']
+        cleaned_inquiry['Tipo de Credito'] = inquiry['Tipo de Crédito']
+        cleaned_inquiry['Moneda'] = inquiry['Moneda']
+
+        # Clean 'Monto'
+        monto = inquiry['Monto']
+        try:
+            monto_decimal = decimal.Decimal(monto.replace('$', '').replace(',', ''))
+            cleaned_inquiry['Monto'] = monto_decimal.quantize(decimal.Decimal('1'))
+        except decimal.InvalidOperation:
+            cleaned_inquiry['Monto'] = None
+
+        cleaned_inquiries.append(cleaned_inquiry)
+
+    return cleaned_inquiries
+
+
 def calculate_total_credits_not_old(consult_date, df_cleaned_records):
     total = 0
     threshold = pd.Timedelta(days=365.25 / 12 * 2 * 12)
@@ -249,7 +289,6 @@ def calculate_largest_monthly_payment(df_cleaned_records):
     largest_row = None
     for index, record in df_cleaned_records.iterrows():
         monthly_payment = calculate_monthly_payment(record=record)
-        prev_largest = largest
         try:
             days = decimal.Decimal(TIME_INTERVALS[record['Frequency']])
             time_calc = decimal.Decimal('360') / days
@@ -272,7 +311,34 @@ def calculate_largest_monthly_payment(df_cleaned_records):
     return largest, largest_row
 
 
-def calculate_data(cleaned_records):
+def calculate_inquiries_12_months(consult_date, df_cleaned_inquiries):
+    inquiries = decimal.Decimal('0')
+    month_diff = pd.Timedelta(days=365.25)
+    for index, inquiry in df_cleaned_inquiries.iterrows():
+        if consult_date - inquiry['Fecha de Consulta'] < month_diff:
+            inquiries += 1
+    return inquiries
+
+
+def calculate_inquiries_24_months(consult_date, df_cleaned_inquiries):
+    inquiries = decimal.Decimal('0')
+    month_diff = pd.Timedelta(days=730.5)
+    for index, inquiry in df_cleaned_inquiries.iterrows():
+        if consult_date - inquiry['Fecha de Consulta'] < month_diff:
+            inquiries += 1
+    return inquiries
+
+
+"""
+TODO: In Reader.py, need to scrape the Consultas Realizadas from the last page of the pdf
+def calculate_inquiries_12_months(df_cleaned_records, fecha_buro):
+    inquires_12_months = decimal.Decimal('0')
+    for index, record in df_cleaned_records.iterrows():
+        if (fecha_buro
+"""
+
+
+def calculate_data(cleaned_records, cleaned_inquries):
     # General Data
     general = extracted_data.general_information
     new_fecha = clean_fecha_consulta(general['Fecha de consulta'])
@@ -280,6 +346,7 @@ def calculate_data(cleaned_records):
 
     calculated_dict = {}
     df_cleaned_records = pd.DataFrame(cleaned_records)
+    df_cleaned_inquiries = pd.DataFrame(cleaned_inquries)
     total_credits = len(df_cleaned_records)
     total_credits_not_old = calculate_total_credits_not_old(consult_date=new_fecha,
                                                             df_cleaned_records=df_cleaned_records)
@@ -297,8 +364,15 @@ def calculate_data(cleaned_records):
                                                                              df_cleaned_records=df_cleaned_records)
     oldest_period = calculate_oldest_period(df_cleaned_records=df_cleaned_records)
     largest_balance, largest_balance_row = calculate_largest_balance(df_cleaned_records=df_cleaned_records)
-    largest_monthly_payment, largest_monthly_row = calculate_largest_monthly_payment(df_cleaned_records=df_cleaned_records)
+    largest_monthly_payment, largest_monthly_row = calculate_largest_monthly_payment(
+        df_cleaned_records=df_cleaned_records)
 
+    inquiries_12_months = calculate_inquiries_12_months(consult_date=new_fecha,
+                                                        df_cleaned_inquiries=df_cleaned_inquiries)
+    inquiries_24_months = calculate_inquiries_24_months(consult_date=new_fecha,
+                                                        df_cleaned_inquiries=df_cleaned_inquiries)
+
+    calculated_dict['Nombre'] = name
     calculated_dict['Creditos Totales'] = total_credits
     calculated_dict['Creditos Totales - Not Old'] = total_credits_not_old
     calculated_dict['Creditos Activos'] = total_credits_active
@@ -314,9 +388,8 @@ def calculate_data(cleaned_records):
     calculated_dict['Saldo mas grande - Row'] = largest_balance_row
     calculated_dict['Pagos mens mayor'] = largest_monthly_payment
     calculated_dict['Pagos mens mayor - Row'] = largest_monthly_row
-    for key, value in calculated_dict.items():
-        if key in ['Pagos mens mayor - Row', 'Pagos mens mayor', 'Saldo mas grande - Row', 'Saldo mas grande']:
-            print(value)
+    calculated_dict['Consultas Ult 12 Meses'] = inquiries_12_months
+    calculated_dict['Consultas Ult 24 Meses'] = inquiries_24_months
 
 
 # Extract the data
@@ -325,9 +398,11 @@ extracted_data = Reader.extract_data()
 # Clean the data
 clean_records = clean_data(extracted_data.transactions)
 
-# Process the cleaned records
-"""for clean in clean_records:
+# Clean inquiries
+cleaned_inquiries = clean_inquiries(extracted_data.inquiries)
+"""# Process the cleaned records
+for clean in clean_records:
     # Perform further processing or calculations on the clean records
     # Example: print the cleaned record
     print(clean)"""
-calculate_data(clean_records)
+calculate_data(clean_records, cleaned_inquiries)

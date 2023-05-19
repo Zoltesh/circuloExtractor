@@ -29,6 +29,7 @@ TIME_INTERVALS = {
     'Mensual': 30
 }
 
+# These are the local positions of the values in a credit record
 POSITIONS = {
     # Row 1
     'Frequency': (1, 0),
@@ -56,6 +57,15 @@ POSITIONS = {
 
     # Row 3
     'Historial': (3, 6)
+}
+
+# The local positions for Consultas Realizadas
+INQUIRY_POSITIONS = {
+    'Fecha de Consulta': (1, 0),
+    'Otorgante': (1, 1),
+    'Tipo de Crédito': (1, 2),
+    'Monto': (1, 3),
+    'Moneda': (1, 4)
 }
 
 ELEVATE_SCORING_ALGORITHM = {
