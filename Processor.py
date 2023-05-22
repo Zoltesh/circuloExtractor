@@ -222,21 +222,24 @@ TODO Why does spreadsheet refer all records in iterrows to the first record's fr
 
 
 def calculate_oldest_period(df_cleaned_records):
-    oldest = ''
-    """
-    TODO fix the period not returning the expected value
-    """
-    period = None
-    for index, record in df_cleaned_records.iterrows():
-        period = TIME_INTERVALS[record['Frequency']]
-        if (type(record['Reporte']) == str) or (type(record['Cierre']) == str):
-            continue
-        elif not period:
-            continue
-        else:
-            oldest = min(record['Reporte'], record['Cierre']) - datetime.timedelta(days=(index * period))
+    first_period = TIME_INTERVALS[df_cleaned_records.loc[0, 'Frequency']]
+    min_date = None
 
-    return oldest
+    for index, record in df_cleaned_records.iterrows():
+        if not (isinstance(record['Reporte'], datetime.datetime) and isinstance(record['Cierre'], datetime.datetime)):
+            continue
+        first_date = min(record['Reporte'], record['Cierre'])
+
+        if min_date is None:
+            min_date = first_date
+
+        for i, h in enumerate(record['Historial']):
+            if h == '-' or not h:
+                continue
+            current_date = first_date - pd.Timedelta(days=(first_period * i))
+            min_date = min(min_date, current_date)
+
+    return min_date
 
 
 def calculate_monthly_payment(record):
@@ -374,6 +377,7 @@ def calculate_data(general, cleaned_records, cleaned_inquries):
                                                         df_cleaned_inquiries=df_cleaned_inquiries)
     inquiries_24_months = calculate_inquiries_24_months(consult_date=new_fecha,
                                                         df_cleaned_inquiries=df_cleaned_inquiries)
+    print(oldest_period)
     calculated_dict['Output Filename'] = output_filename
     calculated_dict['Nombre'] = name
     calculated_dict['Creditos Totales'] = total_credits

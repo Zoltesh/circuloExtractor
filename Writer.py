@@ -21,7 +21,7 @@ def generate_pdf(filename, processed_data):
     title_style = ParagraphStyle(
         name='TitleStyle',
         parent=styles['Title'],
-        alignment=TA_LEFT,
+        alignment=TA_CENTER,
         fontName='Helvetica-Bold',
         underline=True,
     )
@@ -92,6 +92,7 @@ def generate_pdf(filename, processed_data):
 
         ('LINEBELOW', (0, 1), (-1, 1), 1, colors.black),
         ('LINEBELOW', (0, 2), (-1, 2), 1, colors.black),
+        ('LINEBELOW', (1, 3), (-1, 3), 1, colors.black),
         ('LINEBELOW', (0, 4), (-1, 4), 1, colors.black),
 
         ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),  # Add a line above the last row
@@ -103,11 +104,11 @@ def generate_pdf(filename, processed_data):
         ('LINEAFTER', (-1, 0), (-1, -1), 1, colors.black),
         ('LINEBEFORE', (-1, 0), (-1, -1), 1, colors.black),
 
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black)
     ]))
 
     flowables.append(table)
