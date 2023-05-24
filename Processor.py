@@ -216,11 +216,6 @@ def calculate_total_monthly_amount_not_old(consult_date, df_cleaned_records):
     return total
 
 
-"""
-TODO Why does spreadsheet refer all records in iterrows to the first record's frequency instead of the current iteration
-"""
-
-
 def calculate_oldest_period(df_cleaned_records):
     first_period = TIME_INTERVALS[df_cleaned_records.loc[0, 'Frequency']]
     min_date = None
@@ -239,7 +234,7 @@ def calculate_oldest_period(df_cleaned_records):
             current_date = first_date - pd.Timedelta(days=(first_period * i))
             min_date = min(min_date, current_date)
 
-    return min_date
+    return min_date.strftime('%d-%b-%y')
 
 
 def calculate_monthly_payment(record):
@@ -332,15 +327,6 @@ def calculate_inquiries_24_months(consult_date, df_cleaned_inquiries):
     return inquiries
 
 
-"""
-TODO: In Reader.py, need to scrape the Consultas Realizadas from the last page of the pdf
-def calculate_inquiries_12_months(df_cleaned_records, fecha_buro):
-    inquires_12_months = decimal.Decimal('0')
-    for index, record in df_cleaned_records.iterrows():
-        if (fecha_buro
-"""
-
-
 def calculate_data(general, cleaned_records, cleaned_inquries):
     new_fecha = clean_fecha_consulta(general['Fecha de consulta'])
     first_name = general['Nombre (s)']
@@ -365,6 +351,7 @@ def calculate_data(general, cleaned_records, cleaned_inquries):
     current_balance = df_cleaned_records['Actual'].sum()
     current_balance_not_old = calculate_current_balance_not_old(consult_date=new_fecha,
                                                                 df_cleaned_records=df_cleaned_records)
+    late_balance = current_balance - current_balance_not_old
     current_monthly_payment = calculate_total_monthly_amount(df_cleaned_records=df_cleaned_records)
     current_monthly_payment_not_old = calculate_total_monthly_amount_not_old(consult_date=new_fecha,
                                                                              df_cleaned_records=df_cleaned_records)
@@ -377,7 +364,6 @@ def calculate_data(general, cleaned_records, cleaned_inquries):
                                                         df_cleaned_inquiries=df_cleaned_inquiries)
     inquiries_24_months = calculate_inquiries_24_months(consult_date=new_fecha,
                                                         df_cleaned_inquiries=df_cleaned_inquiries)
-    print(oldest_period)
     calculated_dict['Output Filename'] = output_filename
     calculated_dict['Nombre'] = name
     calculated_dict['Creditos Totales'] = total_credits
@@ -389,8 +375,10 @@ def calculate_data(general, cleaned_records, cleaned_inquries):
     calculated_dict['Creditos Atrasados - Not Old'] = total_credits_late_not_old
     calculated_dict['Saldo Actual'] = current_balance
     calculated_dict['Saldo Actual - Not Old'] = current_balance_not_old
+    calculated_dict['Late Balance'] = late_balance
     calculated_dict['Pago Mensual Actual'] = current_monthly_payment
     calculated_dict['Pago Mensual Actual - Not Old'] = current_monthly_payment_not_old
+    calculated_dict['Periodo Mas Antiguo'] = oldest_period
     calculated_dict['Saldo mas grande'] = largest_balance
     calculated_dict['Saldo mas grande - Row'] = largest_balance_row
     calculated_dict['Pagos mens mayor'] = largest_monthly_payment
