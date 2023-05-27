@@ -20,8 +20,8 @@ def output_title():
     # Define a style for your title
     title_style = ParagraphStyle(
         name='Title',
-        fontSize=20,
-        alignment=1,  # 1 for CENTER alignment
+        fontSize=16,
+        alignment=0,
     )
 
     # Create your title with the style
@@ -29,92 +29,91 @@ def output_title():
 
     flowables.append(title)
     # Add a spacer after the title to create some vertical space
-    flowables.append(Spacer(1, 50))  # Adjust the height as needed
+    flowables.append(Spacer(1, 5))  # Adjust the height as needed
 
 
 def output_name(name):
     pass
 
 
+def block_table_1(data):
+    table_data = [
+        [data[0], data[2]],
+        [data[1]],
+    ]
+
+    table = Table(table_data)
+    table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (0, 0), 'TOP')
+    ]))
+    flowables.append(table)
+
+
 def data_table_1(processed):
     # Create a list to store the table data
     table_data = [
-        ["Header", "Total", "Not Old"],
-        ["# créditos totales:", str(processed['Creditos Totales']), str(processed['Creditos Totales - Not Old'])],
-        ["# créditos activos:", str(processed['Creditos Activos']), str(processed['Creditos Activos - Not Old'])],
-        [f"# créditos atrasados:", str(processed['Creditos Atrasados']), str(processed['Creditos Atrasados - Not Old'])],
-        [f"- filas {str(processed['Filas Atrasadas'])}"],
-        ["Saldo actual", f"${str(processed['Saldo Actual'])}", f"${str(processed['Saldo Actual - Not Old'])}"],
-        ["Pago mensual actual", f"${str(processed['Pago Mensual Actual'])}", f"${str(processed['Pago Mensual Actual - Not Old'])}"],
+        ["", Paragraph("<u>Total</u>", style=ParagraphStyle(name='Total')),
+         Paragraph("<u>Not Old</u>", style=ParagraphStyle(name='Total'))],
+        [Paragraph("<u># créditos totales</u>:"), str(processed['Creditos Totales']), str(processed['Creditos Totales '
+                                                                                                    '- Not Old'])],
+        [Paragraph("<u># créditos activos</u>:"), str(processed['Creditos Activos']), str(processed['Creditos Activos '
+                                                                                                    '- Not Old'])],
+        [Paragraph("<u># créditos atrasados</u>:"), str(processed['Creditos Atrasados']),
+         str(processed['Creditos Atrasados - Not Old'])],
+        [Paragraph(f"<u>- filas {str(processed['Filas Atrasadas'])}</u>")],
+        [Paragraph("<u>Saldo actual</u>:"), f"${str(processed['Saldo Actual'])}",
+         f"${str(processed['Saldo Actual - Not Old'])}"],
+        [Paragraph("<u>Pago mensual actual</u>:"), f"${str(processed['Pago Mensual Actual'])}",
+         f"${str(processed['Pago Mensual Actual - Not Old'])}"],
     ]
 
     # Create the table and set its style
-    table = Table(table_data, colWidths=[110, 70, 70], rowHeights=30)
+    table = Table(table_data, colWidths=[110, 45, 45], rowHeights=12)
     table.setStyle(TableStyle([
-        # Tuple values are (col, row)
-        ('LINEABOVE', (0, 0), (-1, 0), 1, colors.black),
-        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
-        ('LINEBELOW', (0, 1), (-1, 1), 1, colors.black),
-        ('LINEBELOW', (0, 2), (-1, 2), 1, colors.black),
-        ('LINEBELOW', (1, 3), (-1, 3), 1, colors.black),
-        ('LINEBELOW', (0, 4), (-1, 4), 1, colors.black),
-        ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
-        ('LINEBELOW', (0, -1), (-1, -1), 1, colors.black),
-        ('LINEBEFORE', (0, 0), (0, -1), 1, colors.black),
-        ('LINEAFTER', (0, 0), (0, -1), 1, colors.black),
-        ('LINEAFTER', (-1, 0), (-1, -1), 1, colors.black),
-        ('LINEBEFORE', (-1, 0), (-1, -1), 1, colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('LINEBELOW', (0, 5), (-1, 5), 1, colors.black),
+        ('ALIGN', (0, 0), (-1, 3), 'LEFT'),
+        ('ALIGN', (0, 5), (-1, -1), 'LEFT'),
+        ('ALIGN', (0, 4), (0, 4), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black)
     ]))
 
-    # Create a KeepInFrame object and add your table to it
-    keep_in_frame_1 = KeepInFrame(400, 200, [table], hAlign='LEFT')
-    flowables.append(keep_in_frame_1)
+    return table
 
 
 def data_table_2(processed):
     # Create a list to store the table data
     table_data = [
-        ["Header", "Value", "Fila"],
-        ["Periodo más antiguo:", str(processed['Periodo Mas Antiguo'])],
-        ["Saldo más grande (est):", str(processed['Saldo mas grande']), str(processed['Saldo mas grande - Row'])],
-        ["Pago mens mayor (est):", f"${str(processed['Pagos mens mayor'])}", str(processed['Pagos mens mayor - Row'])],
-        ["# consultas (ult. 12 meses):", str(processed['Consultas Ult 12 Meses'])],
-        ["# consultas (ult. 24 meses):", str(processed['Consultas Ult 24 Meses'])]
+        [Paragraph("<u>Periodo más antiguo</u>:"), str(processed['Periodo Mas Antiguo'])],
+
+        [Paragraph("<u>Saldo más grande (est)</u>:"), str(processed['Saldo mas grande']),
+         f"fila({str(processed['Saldo mas grande - Row'])})"],
+
+        [Paragraph("<u>Pago mens mayor (est)</u>:"), f"${str(processed['Pagos mens mayor'])}",
+         f"fila({str(processed['Pagos mens mayor - Row'])})"],
+
+        [Paragraph("<u># consultas (ult. 12 meses)</u>:"), str(processed['Consultas Ult 12 Meses'])],
+
+        [Paragraph("<u># consultas (ult. 24 meses)</u>:"), str(processed['Consultas Ult 24 Meses'])]
     ]
 
     # Create the table and set its style
-    table = Table(table_data, colWidths=[110, 80, 30], rowHeights=30)
+    table = Table(table_data, colWidths=[150, 45, 45], rowHeights=12)
     table.setStyle(TableStyle([
-        # Tuple values are (col, row)
-        ('LINEABOVE', (0, 0), (-1, 0), 1, colors.black),
-        ('LINEABOVE', (0, 1), (-1, 1), 1, colors.black),
-        ('LINEABOVE', (0, 2), (-1, 2), 1, colors.black),
-        ('LINEABOVE', (0, 3), (-1, 3), 1, colors.black),
-        ('LINEABOVE', (0, 4), (-1, 4), 1, colors.black),
-        ('LINEABOVE', (0, 5), (-1, 5), 1, colors.black),
-        ('LINEBELOW', (0, 5), (-1, 5), 1, colors.black),
-        ('LINEBEFORE', (0, 0), (0, -1), 1, colors.black),
-        ('LINEBEFORE', (1, 0), (1, -1), 1, colors.black),
-        ('LINEBEFORE', (2, 0), (2, -1), 1, colors.black),
-        ('LINEAFTER', (2, 0), (2, -1), 1, colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('FONTSIZE', (0, 0), (-1, -1), 8),
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black)
     ]))
 
     # Create a KeepInFrame object and add your table to it
-    keep_in_frame_2 = KeepInFrame(400, 200, [table], hAlign='LEFT')
-    flowables.append(keep_in_frame_2)
+    return table
 
 
 def bar_chart_1(processed):
     # Create a Drawing object to hold the chart
-    drawing = Drawing(400, 200)
+    drawing = Drawing(100, 130)
 
     # Create a VerticalBarChart object
     chart = VerticalBarChart()
@@ -139,14 +138,16 @@ def bar_chart_1(processed):
     chart.bars[1].fillColor = HexColor("#4472C4")
 
     chart.categoryAxis.style = 'stacked'
+    chart.categoryAxis.visible = False
+    chart.valueAxis.visible = False
     # Set the labels for the x-axis
-    chart.categoryAxis.categoryNames = ['Your Label']
+    chart.height = 130
+    chart.width = 70
 
     # Add the chart to the drawing
     drawing.add(chart)
 
-    # Add the drawing to your flowables
-    flowables.append(drawing)
+    return drawing
 
 
 # Extract the data from Reader.py and process it in Processor.py
@@ -157,16 +158,7 @@ cleaned_inquiries = Processor.clean_inquiries(extracted_data.inquiries)
 processed_data = Processor.calculate_data(general, clean_records, cleaned_inquiries)
 
 output_title()
-data_table_1(processed=processed_data)
-data_table_2(processed=processed_data)
-
-
-# Create a Spacer to add space between the tables
-spacer = Spacer(0, 20)
-flowables.append(spacer)
-
-bar_chart_1(processed=processed_data)
-
+block_table_1([data_table_1(processed_data), data_table_2(processed_data), bar_chart_1(processed_data)])
 
 # Create a PDF document
 doc = SimpleDocTemplate("testy.pdf", pagesize=letter, leftMargin=18, rightMargin=18)
