@@ -8,8 +8,6 @@ from Constants import POSITIONS, INQUIRY_POSITIONS
 
 logger = configure_logging()
 
-# Constants
-PDF_PATH = 'Z:/Code/Credit Report Summary/New Example Input/Example input.pdf'
 CURP_STR = "CURP:"
 
 
@@ -100,9 +98,12 @@ def extract_general_information(text):
     general_information = {}
 
     # Extracting Folio consulta otra SIC and Folio consulta since they appear immediately on the first 2 lines
-    folio_consulta, folio_consulta_otra_sic = text.split('\n', maxsplit=1)
-    general_information['Folio consulta'] = folio_consulta.strip()
-    general_information['Folio consulta otra SIC'] = folio_consulta_otra_sic.strip()
+    lines = text.split('\n')
+    folio_consulta = lines[0].strip()
+    folio_consulta_otra_sic = lines[1].strip() if len(lines) > 1 else ''
+
+    general_information['Folio consulta'] = folio_consulta
+    general_information['Folio consulta otra SIC'] = folio_consulta_otra_sic
 
     # Other general info starts after the string "CURP: "
     curp_idx = text.find("CURP:")
@@ -118,8 +119,11 @@ def extract_general_information(text):
 
         # Extracting Razones de Score if present
         razones_de_score = re.search(r"Razones de Score: (.*)", names[7])
-        general_information['Razones de Score'] = razones_de_score.group(1).split(', ') if razones_de_score else None
-
+        if razones_de_score:
+            razones_de_score_values = razones_de_score.group(1).split(',')
+            general_information['Razones de Score'] = [value.strip() for value in razones_de_score_values]
+        else:
+            general_information['Razones de Score'] = None
     else:
         # If CURP is not found, assign None to all general information keys
         keys = ['Nombre (s)', 'Apellido Paterno', 'Apellido Materno', 'Fecha de Nacimiento', 'RFC',
@@ -147,13 +151,17 @@ def extract_credit_data(table, positions):
     """
 
     records = []
+    rows_to_change = ['Limite', 'Aprobado', 'Actual', 'Vencido', 'A pagar']
     # Iterate over the rows of the DataFrame in steps of 3 (assuming each record is 3 rows long)
     for start_row in range(2, len(table.df), 3):  # Start from row 3
         if start_row + 2 >= len(table.df):  # Check if the record has all three rows
             break  # If not, break out of the loop
         record = {}
         for key, (row_offset, col) in positions.items():
-            record[key] = table.df.iloc[start_row + row_offset, col]
+            value = table.df.iloc[start_row + row_offset, col]
+            if key in rows_to_change and value == '0':
+                value = '-'
+            record[key] = value
         records.append(record)
 
     return records
@@ -184,7 +192,7 @@ def extract_consultas_realizadas(table, positions):
 
 # Uses PyMuPDF (fitz) to extract the general text info from page 1
 # Uses Camelot to extract the tabular data for the records on pages 2+
-def extract_data():
+def extract_data(path):
     """
     Extracts data from the credit report.
 
@@ -194,7 +202,7 @@ def extract_data():
     """
 
     try:
-        with fitz.open(PDF_PATH) as pdf:
+        with fitz.open(path) as pdf:
             extracted_data = ExtractedData()
 
             # Extract general information from the first page
@@ -204,7 +212,7 @@ def extract_data():
             logger.debug("General information extracted")
 
             # Extract tables from all pages
-            tables = camelot.read_pdf(PDF_PATH, pages='all', flavor='lattice', line_scale=100)
+            tables = camelot.read_pdf(path, pages='all', flavor='lattice', line_scale=100)
 
             # Iterate over all tables
             for table in tables:
@@ -225,8 +233,14 @@ def extract_data():
 
             logger.debug("Credit data and Consultas Realizadas extracted")
 
+            # Convert transactions to a DataFrame
+            extracted_data.transactions = pd.DataFrame(extracted_data.transactions)
+
+            # Convert inquiries to a DataFrame
+            extracted_data.inquiries = pd.DataFrame(extracted_data.inquiries)
+
     except fitz.fitz.FileDataError:
-        logger.error(f"Cannot open broken document: {PDF_PATH}")
+        logger.error(f"Cannot open broken document: {path}")
 
     return extracted_data
 

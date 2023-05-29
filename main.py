@@ -4,7 +4,8 @@
 import tkinter.filedialog
 import customtkinter
 from pathlib import Path
-from Reader import extract_pdf_data
+from Writer import process_extracted_data
+from Reader import extract_data
 
 
 class App(customtkinter.CTk):
@@ -138,16 +139,12 @@ class App(customtkinter.CTk):
                     pdf_files = [file for file in Path(input_folder).iterdir() if
                                  file.suffix.lower() == '.pdf' and not file.name.startswith('~')]
 
-                    extracted_data_list = [extract_pdf_data(str(pdf_file)) for pdf_file in pdf_files]
+                    extracted_data_list = [extract_data(str(pdf_file)) for pdf_file in pdf_files]
 
                     # Filter out any None values (i.e., broken documents)
                     extracted_data_list = [data for data in extracted_data_list if data is not None]
-
-                    # Process the extracted data using the functions in Processor.py
-                    # processed_data = process_extracted_data(extracted_data_list)
-
-                    # Write the processed data to the output folder using the functions in Writer.py
-                    # write_processed_data(processed_data, output_folder)
+                    # Process the extracted data using the functions in Writer.py
+                    process_extracted_data(output_folder, extracted_data_list)
 
                     print("Data processing completed.")
             else:
