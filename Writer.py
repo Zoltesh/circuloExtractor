@@ -1,8 +1,8 @@
 import openpyxl
-from openpyxl.utils import get_column_letter
+import win32com.client
 import datetime
+
 from Constants import SPANISH_TO_ENGLISH_MONTHS_FULL, TIME_INTERVALS
-import pandas as pd
 
 
 def clean_fecha_consulta(date):
@@ -30,10 +30,28 @@ def create_prefix(output_folder, data):
     paterno = data['Apellido Paterno']
     materno = data['Apellido Materno']
     rfc = data['RFC']
-    output_xlsx = f'{output_folder}/{first_name}_{paterno}_{materno}_{rfc}.xlsx'
-    output_pdf = f'{output_folder}/{first_name}_{paterno}_{materno}_{rfc}.pdf'
+    prefix = f'{output_folder}/{first_name}_{paterno}_{materno}_{rfc}'
+    output_xlsx = f'{prefix}.xlsx'
+    output_pdf = f'{prefix}.pdf'
 
     return output_xlsx, output_pdf
+
+
+def generate_pdf_from_excel(xlsx_name, pdf_name):
+    excel = win32com.client.Dispatch("Excel.Application")
+    excel.Visible = False
+    excel.DisplayAlerts = False  # disable alerts
+    wb = None
+    try:
+        wb = excel.Workbooks.Open(xlsx_name)
+        ws = wb.Worksheets['Resumen']
+        ws.ExportAsFixedFormat(0, pdf_name)
+    except Exception as e:
+        print(e)
+    finally:
+        if wb is not None:
+            wb.Close(False)  # Close the workbook, don't save changes
+        excel.Quit()
 
 
 def copy_template(xlsx_name):
@@ -122,5 +140,4 @@ def process_extracted_data(output_folder, extracted_data_list):
         # Save the modified workbook with the desired output file name
         template_wb.save(xlsx_name)
         template_wb.close()
-
 

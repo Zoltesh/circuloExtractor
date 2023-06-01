@@ -26,7 +26,9 @@ SPANISH_TO_ENGLISH_MONTHS_FULL = {
 TIME_INTERVALS = {
     'Semanal': 7,
     'Catorcenal': 14,
-    'Mensual': 30
+    'Quincenal': 15,
+    'Mensual': 30,
+    'Bimestral': 60
 }
 
 # These are the local positions of the values in a credit record
