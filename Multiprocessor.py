@@ -7,7 +7,6 @@ def process_files(input_folder, output_folder):
     # Process all PDF files in the input folder
     pdf_files = []
     for file in Path(input_folder).iterdir():
-        print(f"File: {file}, type: {type(file)}, suffix: {file.suffix}, type of suffix: {type(file.suffix)}")
         if file.suffix.lower() == '.pdf' and not file.name.startswith('~'):
             pdf_files.append(file)
     # Create a multiprocessing pool

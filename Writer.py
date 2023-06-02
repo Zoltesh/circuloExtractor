@@ -4,7 +4,6 @@ import datetime
 import pywintypes
 from Constants import SPANISH_TO_ENGLISH_MONTHS_FULL, TIME_INTERVALS, SPANISH_TO_ENGLISH_MONTHS
 
-
 def clean_numbers(money_string):
     if money_string not in [0, '']:
         money_string = int(money_string.replace(',', ''))
