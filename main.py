@@ -1,13 +1,11 @@
 """
 @author: Zoltesh
 """
-import multiprocessing
+from Multiprocessor import process_files
 import tkinter.filedialog
-from Multiprocessor import process_file
 import customtkinter
 from pathlib import Path
-
-from Writer import create_prefix, generate_pdf_from_excel, process_extracted_data
+from Writer import process_extracted_data
 
 
 class App(customtkinter.CTk):
@@ -114,6 +112,7 @@ class App(customtkinter.CTk):
     def run_button_function(self):
         text_fields = {'input_folder_path': self.input_folder_textfield,
                        'output_folder_path': self.output_folder_textfield}
+
         # If the textfields are not empty or invalid, set the run_result to the valid path
         for key, value in text_fields.items():
             text = value.get().split('\n')[0]  # Get the text field value
@@ -137,36 +136,14 @@ class App(customtkinter.CTk):
             if input_folder == output_folder:
                 print("Input and output folders cannot be the same. Please choose different folders.")
             else:
-                # Process all PDF files in the input folder
-                pdf_files = [file for file in Path(input_folder).iterdir() if
-                             file.suffix.lower() == '.pdf' and not file.name.startswith('~')]
+                # Process all PDF files in the input folder and get results
+                extracted_data_list = process_files(input_folder, output_folder)
 
-                # Create a multiprocessing pool
-                pool = multiprocessing.Pool(processes=4)
+                for extracted_data in extracted_data_list:
+                    process_extracted_data(output_folder, [extracted_data])
+                """# After all data extraction is done, process the extracted data and export to PDF (not in parallel)
+                process_extracted_data(output_folder, extracted_data_list)  # process the data"""
 
-                # Process each file using the multiprocessing pool
-                results = []
-                for pdf_file in pdf_files:
-                    result = pool.apply_async(process_file, args=(pdf_file, output_folder))
-                    results.append(result)
-
-                # Close the pool and wait for all processes to complete
-                pool.close()
-                pool.join()
-                # Extract results from multiprocessing
-                results_data = [result.get() for result in results]
-
-                # After all data extraction is done,
-                # process the extracted data and export to PDF (not in parallel)
-                for pdf_file, extracted_data in results_data:
-                    if extracted_data is not None:
-                        process_extracted_data(output_folder, [extracted_data])  # process the data
-                        xlsx_name, pdf_name = create_prefix(output_folder=output_folder,
-                                                            data=extracted_data.general_information)
-                        try:
-                            generate_pdf_from_excel(xlsx_name, pdf_name)
-                        except Exception as e:
-                            print(f"Error generating PDF from Excel for file {xlsx_name}. Error: {e}")
         else:
             print("Please provide valid input and output folder paths.")
 

@@ -1,8 +1,14 @@
 import openpyxl
 import win32com.client
 import datetime
+import pywintypes
+from Constants import SPANISH_TO_ENGLISH_MONTHS_FULL, TIME_INTERVALS, SPANISH_TO_ENGLISH_MONTHS
 
-from Constants import SPANISH_TO_ENGLISH_MONTHS_FULL, TIME_INTERVALS
+
+def clean_numbers(money_string):
+    if money_string not in [0, '']:
+        money_string = int(money_string.replace(',', ''))
+    return money_string
 
 
 def clean_fecha_consulta(date):
@@ -23,6 +29,14 @@ def clean_fecha_consulta(date):
         date = None
 
     return date
+
+
+def clean_spanish_date(date_string):
+    if not date_string:
+        return None
+    day, month, year = date_string.split('/')
+    month = SPANISH_TO_ENGLISH_MONTHS[month]
+    return datetime.datetime.strptime(f"{day}/{month}/{year}", "%d/%b/%y")
 
 
 def create_prefix(output_folder, data):
@@ -46,11 +60,10 @@ def generate_pdf_from_excel(xlsx_name, pdf_name):
         wb = excel.Workbooks.Open(xlsx_name)
         ws = wb.Worksheets['Resumen']
         ws.ExportAsFixedFormat(0, pdf_name)
-    except Exception as e:
+    except pywintypes.com_error as e:
         print(e)
     finally:
-        if wb is not None:
-            wb.Close(False)  # Close the workbook, don't save changes
+        wb.Close()
         excel.Quit()
 
 
@@ -86,7 +99,7 @@ def process_extracted_data(output_folder, extracted_data_list):
         sheet['C7'] = general_information['Nombre (s)']
         sheet['C8'] = general_information['Apellido Paterno']
         sheet['C9'] = general_information['Apellido Materno']
-        sheet['C10'] = general_information['Fecha de Nacimiento']
+        sheet['C10'] = clean_spanish_date(general_information['Fecha de Nacimiento'])
         sheet['C11'] = general_information['RFC']
         sheet['C12'] = general_information['CURP']
 
@@ -110,18 +123,18 @@ def process_extracted_data(output_folder, extracted_data_list):
             sheet[f'H{row}'] = transaction['EstatusCAN']
             sheet[f'I{row}'] = transaction['Historial']
             sheet[f'J{row}'] = TIME_INTERVALS[transaction['Frequency']]
-            sheet[f'K{row}'] = transaction['Limite']
-            sheet[f'L{row}'] = transaction['Aprobado']
-            sheet[f'M{row}'] = transaction['Actual']
-            sheet[f'N{row}'] = transaction['Vencido']
-            sheet[f'O{row}'] = transaction['A pagar']
-            sheet[f'Q{row}'] = transaction['Reporte']
-            sheet[f'R{row}'] = transaction['Apertura']
-            sheet[f'S{row}'] = transaction['Cierre']
-            sheet[f'T{row}'] = transaction['Pago']
-            sheet[f'U{row}'] = transaction['Atraso']
-            sheet[f'V{row}'] = transaction['Monto']
-            sheet[f'W{row}'] = transaction['Fecha']
+            sheet[f'K{row}'] = clean_numbers(transaction['Limite'])
+            sheet[f'L{row}'] = clean_numbers(transaction['Aprobado'])
+            sheet[f'M{row}'] = clean_numbers(transaction['Actual'])
+            sheet[f'N{row}'] = clean_numbers(transaction['Vencido'])
+            sheet[f'O{row}'] = clean_numbers(transaction['A pagar'])
+            sheet[f'Q{row}'] = clean_spanish_date(transaction['Reporte'])
+            sheet[f'R{row}'] = clean_spanish_date(transaction['Apertura'])
+            sheet[f'S{row}'] = clean_spanish_date(transaction['Cierre'])
+            sheet[f'T{row}'] = clean_spanish_date(transaction['Pago'])
+            sheet[f'U{row}'] = clean_numbers(transaction['Atraso'])
+            sheet[f'V{row}'] = clean_numbers(transaction['Monto'])
+            sheet[f'W{row}'] = clean_spanish_date(transaction['Fecha'])
             sheet[f'X{row}'] = transaction['Situacion']
 
         # Get the 'Inquiries' sheet
@@ -131,13 +144,13 @@ def process_extracted_data(output_folder, extracted_data_list):
         start_row = 9
         for i, (index, inquiry) in enumerate(inquiries.iterrows(), start=start_row):
             row = str(i)
-            inquiries_sheet[f'C{row}'] = inquiry['Fecha de Consulta']
+            inquiries_sheet[f'C{row}'] = clean_spanish_date(inquiry['Fecha de Consulta'])
             inquiries_sheet[f'D{row}'] = inquiry['Otorgante']
             inquiries_sheet[f'E{row}'] = inquiry['Tipo de Crédito']
-            inquiries_sheet[f'F{row}'] = inquiry['Monto']
+            inquiries_sheet[f'F{row}'] = clean_numbers(inquiry['Monto'])
             inquiries_sheet[f'G{row}'] = inquiry['Moneda']
 
         # Save the modified workbook with the desired output file name
         template_wb.save(xlsx_name)
         template_wb.close()
-
+        generate_pdf_from_excel(xlsx_name, pdf_name)

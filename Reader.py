@@ -4,30 +4,28 @@ import re
 import pandas as pd
 import matplotlib
 from Logger import configure_logging
-from Constants import POSITIONS, INQUIRY_POSITIONS
 
-logger = configure_logging()
+logger = configure_logging(__name__)
+
+
+def open_pdf(path):
+    try:
+        with fitz.open(path) as pdf:
+            page_1 = pdf.load_page(0)
+            text = page_1.get_text()
+            general_info = extract_general_information(text)
+            logger.debug("General information extracted")
+
+            tables = camelot.read_pdf(str(path), pages='all', flavor='lattice', line_scale=100)
+
+            return general_info, tables
+
+    except fitz.fitz.FileDataError:
+        logger.error(f"Cannot open broken document: {path}")
+        return None
+
 
 CURP_STR = "CURP:"
-
-
-class ExtractedData:
-    """
-    A class to store the extracted data from the credit report.
-
-    Attributes:
-        general_information (dict): Dictionary to store general information.
-        credit_score (dict): Dictionary to store credit score information.
-        transactions (list): List to store transaction records.
-
-    """
-
-    def __init__(self):
-        self.general_information = {}
-        self.credit_score = {}
-        self.transactions = []
-        self.inquiries = []
-
 
 matplotlib.use('TkAgg')  # or 'Qt5Agg'
 
@@ -160,7 +158,7 @@ def extract_credit_data(table, positions):
         for key, (row_offset, col) in positions.items():
             value = table.df.iloc[start_row + row_offset, col]
             if key in rows_to_change and value == '0':
-                value = '-'
+                value = 0
             record[key] = value
         records.append(record)
 
@@ -188,59 +186,3 @@ def extract_consultas_realizadas(table, positions):
             inquiry[key] = table.df.iloc[start_row, col]
         inquiries.append(inquiry)
     return inquiries
-
-
-# Uses PyMuPDF (fitz) to extract the general text info from page 1
-# Uses Camelot to extract the tabular data for the records on pages 2+
-def extract_data(path):
-    """
-    Extracts data from the credit report.
-
-    Returns:
-        ExtractedData: An object containing the extracted data.
-
-    """
-
-    try:
-        with fitz.open(path) as pdf:
-            extracted_data = ExtractedData()
-
-            # Extract general information from the first page
-            page_1 = pdf.load_page(0)
-            text = page_1.get_text()
-            extracted_data.general_information = extract_general_information(text)
-            logger.debug("General information extracted")
-
-            # Extract tables from all pages
-            tables = camelot.read_pdf(path, pages='all', flavor='lattice', line_scale=100)
-
-            # Iterate over all tables
-            for table in tables:
-                # Check if the table is valid for credit data
-                if is_valid_credit(table):
-
-                    # Extract credit data from the table
-                    records = extract_credit_data(table, POSITIONS)
-                    extracted_data.transactions.extend(records)
-
-                # Check if the table is valid for inquiry data (Consultas Realizadas)
-                elif is_valid_inquiry(table):
-                    # Extract "Consultas Realizadas" data from the table
-                    consultas_realizadas = extract_consultas_realizadas(table, INQUIRY_POSITIONS)
-                    extracted_data.inquiries.extend(consultas_realizadas)
-
-                    logger.info("Consultas Realizadas extracted successfully")  # Add logger.info statement
-
-            logger.debug("Credit data and Consultas Realizadas extracted")
-
-            # Convert transactions to a DataFrame
-            extracted_data.transactions = pd.DataFrame(extracted_data.transactions)
-
-            # Convert inquiries to a DataFrame
-            extracted_data.inquiries = pd.DataFrame(extracted_data.inquiries)
-
-    except fitz.fitz.FileDataError:
-        logger.error(f"Cannot open broken document: {path}")
-
-    return extracted_data
-
