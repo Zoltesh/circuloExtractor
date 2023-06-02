@@ -15,6 +15,7 @@ REQUIRED_PACKAGES = [
 ]
 
 
+# Method to check requirements are present
 def check_requirements():
     all_requirements_met = True
     for package_version in REQUIRED_PACKAGES:

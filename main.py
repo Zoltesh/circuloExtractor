@@ -9,6 +9,7 @@ from Writer import process_extracted_data
 from requirements_check import check_requirements
 
 # Stop the program if requirements are not met
+"""TODO implement a graceful gui message"""
 check_requirements()
 
 
