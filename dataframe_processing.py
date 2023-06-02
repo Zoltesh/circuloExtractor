@@ -1,5 +1,4 @@
 import pandas as pd
-
 from Reader import extract_credit_data, extract_consultas_realizadas, is_valid_inquiry, \
     is_valid_credit, open_pdf
 from Logger import configure_logging
