@@ -6,6 +6,10 @@ import tkinter.filedialog
 import customtkinter
 from pathlib import Path
 from Writer import process_extracted_data
+from requirements_check import check_requirements
+
+# Stop the program if requirements are not met
+check_requirements()
 
 
 class App(customtkinter.CTk):
