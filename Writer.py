@@ -44,7 +44,7 @@ def create_prefix(output_folder, data):
     paterno = data['Apellido Paterno']
     materno = data['Apellido Materno']
     rfc = data['RFC']
-    prefix = f'{output_folder}/{first_name}_{paterno}_{materno}_{rfc}'
+    prefix = f'{output_folder}/{first_name}_{paterno}_{materno}_{rfc}'.replace(" ", "_")
     output_xlsx = f'{prefix}.xlsx'
     output_pdf = f'{prefix}.pdf'
 
